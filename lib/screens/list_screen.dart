@@ -21,7 +21,10 @@ class ListScreen extends ConsumerWidget {
               icon:Icon(Icons.add))
         ],
       ),
-      body: ListWidget(places: userPlace)
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: ListWidget(places: userPlace),
+      )
     );
   }
 }

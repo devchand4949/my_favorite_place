@@ -23,8 +23,22 @@ class ListWidget extends StatelessWidget {
         itemCount: places.length,
         itemBuilder: (context, index) {
           return ListTile(
+            // show image in circuleavatar
+            leading: CircleAvatar(
+              radius: 26,
+              backgroundImage: FileImage(places[index].image),
+            ),
+            //show title
             title: Text(
               places[index].title,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium!
+                  .copyWith(color: Theme.of(context).colorScheme.onSurface),
+            ),
+            // show location
+            subtitle: Text(
+              places[index].location.address,
               style: Theme.of(context)
                   .textTheme
                   .titleMedium!

@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:favorite_places/main.dart';
+import 'package:favorite_places/models/place_model.dart';
 import 'package:favorite_places/providers/user_places.dart';
 import 'package:favorite_places/widgets/image_input.dart';
+import 'package:favorite_places/widgets/location_input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,14 +17,19 @@ class AddPlaces extends ConsumerStatefulWidget {
 
 class _AddPlacesState extends ConsumerState<AddPlaces> {
   final _titleController = TextEditingController();
+  File? _selectedImage;
+  PlaceLocation? _selectedLocation;
 
   void _savePlace() {
     final enteresTitle = _titleController.text;
 
-    if (enteresTitle.isEmpty) {
+    if (enteresTitle.isEmpty || _selectedImage == null || _selectedLocation == null) {
       return;
     }
-    ref.read(userPlaceProvider.notifier).addPlace(enteresTitle);
+    ref
+        .read(userPlaceProvider.notifier)
+    // provider mathi aavre che addPlace method
+        .addPlace(enteresTitle, _selectedImage!,_selectedLocation!);
 
     Navigator.of(context).pop();
   }
@@ -58,7 +67,18 @@ class _AddPlacesState extends ConsumerState<AddPlaces> {
               height: 10,
             ),
             // camera capture field
-            ImageInput(),
+            ImageInput(
+              onSelectedImageDataPass: (image) {
+                _selectedImage = image;
+              },
+            ),
+            const SizedBox(
+              height: 10,
+            ),
+            // // location input field
+            LocationInput(onSelectLocation: (location){
+              _selectedLocation = location;
+            },),
             const SizedBox(
               height: 10,
             ),
