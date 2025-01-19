@@ -1,25 +1,27 @@
 import 'dart:convert';
 
+import 'package:favorite_places/screens/map_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:http/http.dart' as http;
 import 'package:favorite_places/models/place_model.dart';
 
 class LocationInput extends StatefulWidget {
-  const LocationInput({super.key,required this.onSelectLocation});
+  const LocationInput({super.key, required this.onSelectLocation});
 
-  final void Function(PlaceLocation location)onSelectLocation;
+  final void Function(PlaceLocation location) onSelectLocation;
 
   @override
   State<LocationInput> createState() => _LocationInputState();
 }
 
 class _LocationInputState extends State<LocationInput> {
-  PlaceLocation? _pickedLocation;// placeLocation use for model screen
+  PlaceLocation? _pickedLocation; // placeLocation use for model screen
   var _isGettingLocation = false;
 
   String get locationImage {
-    if(_pickedLocation ==  null){
+    if (_pickedLocation == null) {
       return '';
     }
     final lat = _pickedLocation!.latitude;
@@ -28,7 +30,24 @@ class _LocationInputState extends State<LocationInput> {
     return 'https://maps.googleapis.com/maps/api/staticmap?center=$lat,$lon&zoom=16&size=600x300&maptype=roadmap &markers=color:red%7Clabel:A%7C$lat,$lon&key=YOUR_API_KEYxyz';
   }
 
-  void _getCurrentLocation()async{
+  Future<void> _savePlace(double latitude,double longitude)async{
+    // 1) google map api get kari
+    final url = Uri.https(
+        '//maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&key=YOUR_API_KEYxyz');
+    final response = await http.get(url);
+    final resdata = json.decode(response.body);
+    final address = resdata['results'][0]['formatted_address'];
+
+    setState(() {
+      _pickedLocation =
+          PlaceLocation(latitude: latitude , longitude: longitude, address: address);
+      _isGettingLocation = false;
+    });
+
+    widget.onSelectLocation(_pickedLocation!);
+  }
+
+  void _getCurrentLocation() async {
     Location location = new Location();
 
     bool serviceEnabled;
@@ -59,21 +78,20 @@ class _LocationInputState extends State<LocationInput> {
     final lat = locationData.latitude;
     final lon = locationData.longitude;
 
-    if(lat == null || lon == null){
+    if (lat == null || lon == null) {
       return;
     }
-    // 1) google map api get kari
-    final url = Uri.https('//maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lon&key=YOUR_API_KEYxyz');
-    final response = await http.get(url);
-    final resdata = json.decode(response.body);
-    final address = resdata['results'][0]['formatted_address'];
 
-    setState(() {
-      _pickedLocation = PlaceLocation(latitude: lat, longitude: lon, address: address);
-      _isGettingLocation = false;
-    });
+      _savePlace(lat, lon);
+  }
 
-    widget.onSelectLocation(_pickedLocation!);
+  void _selectOnMap() async{
+    final pickedLocation = await Navigator.of(context)
+        .push<LatLng>(MaterialPageRoute(builder: (context) =>const MapScreen()));
+    if(pickedLocation == null){
+      return;
+    }
+    _savePlace(pickedLocation.latitude, pickedLocation.longitude);
   }
 
   @override
@@ -87,28 +105,33 @@ class _LocationInputState extends State<LocationInput> {
           .copyWith(color: Theme.of(context).colorScheme.onBackground),
     );
 
-    if(_pickedLocation != null){
-      previewContent = Image.network(locationImage,fit: BoxFit.cover,width: double.infinity,height: double.infinity,);
+    if (_pickedLocation != null) {
+      previewContent = Image.network(
+        locationImage,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
     }
 
-    if(_isGettingLocation){
+    if (_isGettingLocation) {
       previewContent = const CircularProgressIndicator();
     }
 
     return Column(
       children: [
         Container(
-          height: 170,
-          width: double.infinity,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-                width: 1,
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
-          ),
-          child:previewContent
-        ),
+            height: 170,
+            width: double.infinity,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                  width: 1,
+                  color:
+                      Theme.of(context).colorScheme.primary.withOpacity(0.2)),
+            ),
+            child: previewContent),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -120,7 +143,7 @@ class _LocationInputState extends State<LocationInput> {
             TextButton.icon(
               label: Text('Select on Map'),
               icon: Icon(Icons.map),
-              onPressed: () {},
+              onPressed: _selectOnMap,
             )
           ],
         )
